@@ -1,5 +1,3 @@
-''' TinyTest, a minimal testing framework '''
-
 from typing import Dict
 import sys
 import os
@@ -12,7 +10,7 @@ import difflib
 import yaml
 
 
-def get_arguments() -> argparse.Namespace:
+def get_arguments() -> Dict:
     parser = argparse.ArgumentParser(description='TinyTest')
     parser.add_argument('input_filename',
                         type=str,
