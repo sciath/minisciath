@@ -1,0 +1,33 @@
+-
+  name: foo
+  command: echo foo
+  expected: foo.expected
+-
+  name: bar
+  command: echo bar
+  expected: bar.expected
+-
+  name: bar1
+  command: echo barf
+  expected: bar.expected
+-
+  name: baz
+  command: touch baz
+  expected: baz.expected
+-
+  name: qux
+  command: echo quxy
+  expected: qux.expected
+
+-
+  name: blisp
+  command: cat not_here
+  expected: blisp.expected
+-
+  name: blisp_fail
+  command: cat not_here_either
+  expected: blisp.expected
+-
+  name: quotes
+  command: echo "who goes there?"
+  expected: quotes.expected

@@ -1,0 +1,9 @@
+# Python
+*.pyc
+__pycache__
+
+# OS X
+.DS_Store
+
+# Vim
+.*.sw[omp]
