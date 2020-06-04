@@ -12,22 +12,25 @@
   expected: bar.expected
 -
   name: baz
-  command: touch baz
+  command: echo
   expected: baz.expected
 -
   name: qux
   command: echo quxy
   expected: qux.expected
-
 -
-  name: blisp
+  name: stderr
   command: cat not_here
-  expected: blisp.expected
+  expected: stderr.expected
 -
-  name: blisp_fail
+  name: stderr_fail
   command: cat not_here_either
-  expected: blisp.expected
+  expected: stderr.expected
 -
   name: quotes
   command: echo "who goes there?"
   expected: quotes.expected
+-
+  name: confusing
+  command: echo this probably; was not what you expected to > happen
+  expected: confusing.expected
