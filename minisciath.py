@@ -43,8 +43,7 @@ def get_tests_from_file(input_filename: str) -> Dict[str, Dict[str, str]]:
         )
     for entry in test_data:
         if not isinstance(entry, dict):
-            raise Exception(
-                'Incorrectly formatted test entry (must be a mapping)')
+            raise Exception('Incorrectly formatted test entry (must be a mapping)')
         if 'expected' not in entry or not entry['expected']:
             raise Exception('Each test entry must defined an expected file')
         if 'command' not in entry:
@@ -72,16 +71,16 @@ def run() -> None:
     tests = get_tests_from_file(args.input_filename)
 
     if args.test_subset:
-        test_names = args.test_subset.split(',') if args.test_subset else tests.keys()
-        for test_name in test_names:
+        active_tests = args.test_subset.split(',')
+        for test_name in active_tests:
             if test_name not in tests:
                 raise Exception("Unrecognized test %s selected" % test_name)
     else:
-        test_names = tests.keys()
+        active_tests = tests.keys()
 
     diff_failed = []
     missing = []
-    for test_name in test_names:
+    for test_name in active_tests:
         command = tests[test_name]['command']
         expected = tests[test_name]['expected']
 
@@ -131,7 +130,7 @@ def run() -> None:
         sys.exit(1)
     else:
         if not args.update:
-            print('SUCCESS (%d of %d tests)' % (len(test_names), len(tests)))
+            print('SUCCESS (%d of %d tests)' % (len(active_tests), len(tests)))
         sys.exit(0)
 
 
