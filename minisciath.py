@@ -118,7 +118,7 @@ def run() -> None:
                 with open(output_filename, 'r') as output_file:
                     lines_output = output_file.readlines()
                     for line in lines_output:
-                        print("+" + line)
+                        print("+" + line, end='')
             print()
 
     if diff_failed or missing:
