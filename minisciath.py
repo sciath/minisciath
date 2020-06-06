@@ -115,6 +115,10 @@ def run() -> None:
             else:
                 print('FAILURE. Missing expected file %s' % expected)
                 missing.append(test_name)
+                with open(output_filename, 'r') as output_file:
+                    lines_output = output_file.readlines()
+                    for line in lines_output:
+                        print("+" + line)
             print()
 
     if diff_failed or missing:

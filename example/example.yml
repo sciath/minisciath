@@ -34,3 +34,7 @@
   name: confusing
   command: echo this probably; was not what you expected to > happen
   expected: confusing.expected
+-
+  name: missing_expected
+  command: echo missing expected
+  expected: missing_expected.expected
