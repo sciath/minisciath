@@ -119,7 +119,7 @@ def run() -> None:
                     lines_output = output_file.readlines()
                     for line in lines_output:
                         print("+" + line, end='')
-            print()
+        print()
 
     if diff_failed or missing:
         print('FAILURE.')
