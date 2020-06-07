@@ -1,4 +1,5 @@
-from typing import Dict
+from __future__ import print_function
+
 import sys
 import os
 import argparse
@@ -11,7 +12,7 @@ import difflib
 import yaml
 
 
-def get_arguments() -> Dict:
+def get_arguments():
     parser = argparse.ArgumentParser(description='TinyTest')
     parser.add_argument('input_filename',
                         type=str,
@@ -31,7 +32,7 @@ def get_arguments() -> Dict:
     return parser.parse_args()
 
 
-def get_tests_from_file(input_filename: str) -> Dict[str, Dict[str, str]]:
+def get_tests_from_file(input_filename):
 
     with open(input_filename, 'r') as input_file:
         test_data = yaml.safe_load(input_file)
@@ -64,7 +65,7 @@ def get_tests_from_file(input_filename: str) -> Dict[str, Dict[str, str]]:
     return tests
 
 
-def run() -> None:
+def run():
 
     args = get_arguments()
 
