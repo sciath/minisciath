@@ -123,7 +123,7 @@ def run():
         print()
 
     if diff_failed or missing:
-        print('FAILURE.')
+        print('FAILURE (%d of %d tests)' %(len(diff_failed)+len(missing), len(tests)))
         if missing:
             print('To generate missing expected files from current output')
             print('  ', 'python', sys.argv[0], args.input_filename, '--update',
