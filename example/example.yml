@@ -34,6 +34,10 @@
   name: confusing
   command: echo this probably; was not what you expected to > happen
   expected: confusing.expected
+- 
+  name: use_shell_redirects
+  command: sh -c 'echo workaround | cat'
+  expected: use_shell_redirects.expected
 -
   name: missing_expected
   command: echo missing expected
