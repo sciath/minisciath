@@ -14,18 +14,11 @@ import yaml
 
 
 def run():
+    """ The main function for MiniSciATH """
 
     args = _get_arguments()
 
-    tests = _get_tests_from_file(args.input_filename)
-
-    if args.test_subset:
-        active_tests = args.test_subset.split(',')
-        for test_name in active_tests:
-            if test_name not in tests:
-                raise Exception("Unrecognized test %s selected" % test_name)
-    else:
-        active_tests = tests.keys()
+    tests, active_tests = _get_tests_from_file(args)
 
     diff_failed = []
     missing = []
@@ -89,9 +82,9 @@ def _get_arguments():
     return parser.parse_args()
 
 
-def _get_tests_from_file(input_filename):
+def _get_tests_from_file(args):
 
-    with open(input_filename, 'r') as input_file:
+    with open(args.input_filename, 'r') as input_file:
         test_data = yaml.safe_load(input_file)
 
     tests = {}
@@ -120,7 +113,16 @@ def _get_tests_from_file(input_filename):
             'command': entry['command'],
             'expected': entry['expected']
         }
-    return tests
+
+    if args.test_subset:
+        active_tests = args.test_subset.split(',')
+        for test_name in active_tests:
+            if test_name not in tests:
+                raise Exception("Unrecognized test %s selected" % test_name)
+    else:
+        active_tests = tests.keys()
+
+    return tests, active_tests
 
 
 def _verify(output_filename, expected):
