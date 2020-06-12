@@ -16,5 +16,5 @@ install:
   - pip install pyyaml pylint yapf
 
 script:
-  - sh -c "pylint *.py"
+  - sh -c "pylint --errors-only *.py"
   - sh -c "yapf --style=google -d *.py"
