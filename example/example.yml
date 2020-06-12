@@ -7,15 +7,15 @@
   command: echo bar
   expected: bar.expected
 -
-  name: bar1
+  name: bar_fail
   command: echo barf
   expected: bar.expected
 -
-  name: baz
+  name: baz_fail
   command: echo
   expected: baz.expected
 -
-  name: qux
+  name: qux_fail
   command: echo quxy
   expected: qux.expected
 -
@@ -39,6 +39,6 @@
   command: sh -c 'echo workaround | cat'
   expected: use_shell_redirects.expected
 -
-  name: missing_expected
+  name: expected_missing
   command: echo missing expected
   expected: missing_expected.expected
