@@ -1,3 +1,4 @@
+""" MiniSciATH, a minimal testing system """
 from __future__ import print_function
 
 import sys
@@ -12,17 +13,74 @@ import difflib
 import yaml
 
 
-def get_arguments():
-    parser = argparse.ArgumentParser(description='TinyTest')
+def run():
+
+    args = _get_arguments()
+
+    tests = _get_tests_from_file(args.input_filename)
+
+    if args.test_subset:
+        active_tests = args.test_subset.split(',')
+        for test_name in active_tests:
+            if test_name not in tests:
+                raise Exception("Unrecognized test %s selected" % test_name)
+    else:
+        active_tests = tests.keys()
+
+    diff_failed = []
+    missing = []
+    for test_name in active_tests:
+        command = tests[test_name]['command']
+        expected = tests[test_name]['expected']
+
+        print('Running', test_name)
+        print('  ', command)
+
+        output_filename = expected if args.update else test_name + '.output'
+        with open(output_filename, 'w') as output_file:
+            subprocess.call(shlex.split(command),
+                            stdout=output_file,
+                            stderr=subprocess.STDOUT)
+
+        if args.update:
+            print('Expected output updated.')
+        else:
+            if os.path.isfile(expected):
+                success = _verify(output_filename, expected)
+                if not success:
+                    diff_failed.append(test_name)
+            else:
+                missing.append(test_name)
+        print()
+
+    if diff_failed or missing:
+        print('FAILURE (%d of %d tests)' %
+              (len(diff_failed) + len(missing), len(tests)))
+        if missing:
+            print('To generate missing expected files from current output')
+            print('  ', 'python', sys.argv[0], args.input_filename, '--update',
+                  '-t', ','.join(missing))
+        if diff_failed:
+            print('To re-run with only failed tests')
+            print('  ', 'python', sys.argv[0], args.input_filename, '-t',
+                  ','.join(diff_failed))
+        sys.exit(1)
+    else:
+        if not args.update:
+            print('SUCCESS (%d of %d tests)' % (len(active_tests), len(tests)))
+        sys.exit(0)
+
+
+def _get_arguments():
+    parser = argparse.ArgumentParser(description='MiniSciATH')
     parser.add_argument('input_filename',
                         type=str,
                         help='Name of input file defining tests')
-    parser.add_argument(
-        '-t',
-        '--test-subset',
-        type=str,
-        help='comma-separated (no spaces) list of names of tests to run',
-        required=False)
+    parser.add_argument('-t',
+                        '--test-subset',
+                        type=str,
+                        help='comma-separated names of tests to run',
+                        required=False)
     parser.add_argument('-u',
                         '--update',
                         help='Update expected output of all tests that are run',
@@ -31,7 +89,7 @@ def get_arguments():
     return parser.parse_args()
 
 
-def get_tests_from_file(input_filename):
+def _get_tests_from_file(input_filename):
 
     with open(input_filename, 'r') as input_file:
         test_data = yaml.safe_load(input_file)
@@ -65,78 +123,21 @@ def get_tests_from_file(input_filename):
     return tests
 
 
-def run():
-
-    args = get_arguments()
-
-    tests = get_tests_from_file(args.input_filename)
-
-    if args.test_subset:
-        active_tests = args.test_subset.split(',')
-        for test_name in active_tests:
-            if test_name not in tests:
-                raise Exception("Unrecognized test %s selected" % test_name)
-    else:
-        active_tests = tests.keys()
-
-    diff_failed = []
-    missing = []
-    for test_name in active_tests:
-        command = tests[test_name]['command']
-        expected = tests[test_name]['expected']
-
-        print('Running', test_name)
-        print('  ', command)
-
-        output_filename = expected if args.update else test_name + '.output'
-        with open(output_filename, 'w') as output_file:
-            subprocess.call(shlex.split(command),
-                            stdout=output_file,
-                            stderr=subprocess.STDOUT)
-
-        if args.update:
-            print('Expected output updated.')
-        else:
-            if os.path.isfile(expected):
-                if filecmp.cmp(output_filename, expected):
-                    print('Success.')
-                else:
-                    print('FAILURE. Output differs from expected:')
-                    diff_failed.append(test_name)
-                    with open(output_filename, 'r') as output_file:
-                        lines_output = output_file.readlines()
-                    with open(expected, 'r') as expected_file:
-                        lines_expected = expected_file.readlines()
-                    for line in difflib.unified_diff(lines_expected,
-                                                     lines_output,
-                                                     fromfile=expected,
-                                                     tofile=output_filename):
-                        print(line, end='')
-            else:
-                print('FAILURE. Missing expected file %s' % expected)
-                missing.append(test_name)
-                with open(output_filename, 'r') as output_file:
-                    lines_output = output_file.readlines()
-                    for line in lines_output:
-                        print("+" + line, end='')
-        print()
-
-    if diff_failed or missing:
-        print('FAILURE (%d of %d tests)' %
-              (len(diff_failed) + len(missing), len(tests)))
-        if missing:
-            print('To generate missing expected files from current output')
-            print('  ', 'python', sys.argv[0], args.input_filename, '--update',
-                  '-t', ','.join(missing))
-        if diff_failed:
-            print('To re-run with only failed tests')
-            print('  ', 'python', sys.argv[0], args.input_filename, '-t',
-                  ','.join(diff_failed))
-        sys.exit(1)
-    else:
-        if not args.update:
-            print('SUCCESS (%d of %d tests)' % (len(active_tests), len(tests)))
-        sys.exit(0)
+def _verify(output_filename, expected):
+    if filecmp.cmp(output_filename, expected):
+        print('Success.')
+        return True
+    with open(output_filename, 'r') as output_file:
+        lines_output = output_file.readlines()
+    with open(expected, 'r') as expected_file:
+        lines_expected = expected_file.readlines()
+    for line in difflib.unified_diff(lines_expected,
+                                     lines_output,
+                                     fromfile=expected,
+                                     tofile=output_filename):
+        print(line, end='')
+    print('FAILURE. Output differs from expected:')
+    return False
 
 
 if __name__ == '__main__':
