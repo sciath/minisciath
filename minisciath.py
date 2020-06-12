@@ -13,6 +13,16 @@ import difflib
 import yaml
 
 
+class Test(object):
+    """ A P.O.D. class to hold data for a test """
+
+    def __init__(self, name, command, expected, group=None):
+        self.name = name
+        self.command = command
+        self.expected = expected
+        self.group = group
+
+
 def run():
     """ The main function for MiniSciATH """
 
@@ -22,28 +32,25 @@ def run():
 
     diff_failed = []
     missing = []
-    for test_name in active_tests:
-        command = tests[test_name]['command']
-        expected = tests[test_name]['expected']
+    for test in active_tests:
+        print('Running', test.name)
+        print('  ', test.command)
 
-        print('Running', test_name)
-        print('  ', command)
-
-        output_filename = expected if args.update else test_name + '.output'
+        output_filename = test.expected if args.update else test.name + '.output'
         with open(output_filename, 'w') as output_file:
-            subprocess.call(shlex.split(command),
+            subprocess.call(shlex.split(test.command),
                             stdout=output_file,
                             stderr=subprocess.STDOUT)
 
         if args.update:
             print('Expected output updated.')
         else:
-            if os.path.isfile(expected):
-                success = _verify(output_filename, expected)
+            if os.path.isfile(test.expected):
+                success = _verify(output_filename, test.expected)
                 if not success:
-                    diff_failed.append(test_name)
+                    diff_failed.append(test.name)
             else:
-                missing.append(test_name)
+                missing.append(test.name)
         print()
 
     if diff_failed or missing:
@@ -79,6 +86,14 @@ def _get_arguments():
                         help='Update expected output of all tests that are run',
                         required=False,
                         action='store_true')
+    parser.add_argument('--only-group',
+                        type=str,
+                        help='Exclude tests outside of a given group',
+                        required=False)
+    parser.add_argument('--exclude-group',
+                        type=str,
+                        help='Exclude tests from a given group',
+                        required=False)
     return parser.parse_args()
 
 
@@ -87,7 +102,7 @@ def _get_tests_from_file(args):
     with open(args.input_filename, 'r') as input_file:
         test_data = yaml.safe_load(input_file)
 
-    tests = {}
+    tests = []
     if not isinstance(test_data, list):
         raise Exception(
             'Incorrectly formatted input file (must have a top level sequence)')
@@ -109,18 +124,39 @@ def _get_tests_from_file(args):
             raise Exception('Duplicate test name %s not allowed' %
                             entry['name'])
 
-        tests[entry['name']] = {
-            'command': entry['command'],
-            'expected': entry['expected']
-        }
+        test = Test(
+            name=entry['name'],
+            command=entry['command'],
+            expected=entry['expected'],
+        )
+
+        if 'group' in entry:
+            if not entry['group']:
+                raise Exception('Empty group name for test %s not allowed' %
+                                test.name)
+            test.group = entry['group']
+
+        tests.append(test)
 
     if args.test_subset:
-        active_tests = args.test_subset.split(',')
-        for test_name in active_tests:
+        name_to_test = {}
+        for test in tests:
+            name_to_test[test.name] = test
+        active_test_names = args.test_subset.split(',')
+        active_tests = []
+        for test_name in active_test_names:
             if test_name not in tests:
                 raise Exception("Unrecognized test %s selected" % test_name)
+            active_tests.append(name_to_test[test_name])
     else:
-        active_tests = tests.keys()
+        active_tests = tests
+
+    if args.exclude_group:
+        group = args.exclude_group
+        active_tests = [test for test in active_tests if test.group != group]
+    if args.only_group:
+        group = args.only_group
+        active_tests = [test for test in active_tests if test.group == group]
 
     return tests, active_tests
 
