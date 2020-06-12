@@ -23,12 +23,11 @@ def get_arguments():
         type=str,
         help='comma-separated (no spaces) list of names of tests to run',
         required=False)
-    parser.add_argument(
-        '-u',
-        '--update',
-        help='Update expected output of all tests that are run',
-        required=False,
-        action='store_true')
+    parser.add_argument('-u',
+                        '--update',
+                        help='Update expected output of all tests that are run',
+                        required=False,
+                        action='store_true')
     return parser.parse_args()
 
 
@@ -40,11 +39,11 @@ def get_tests_from_file(input_filename):
     tests = {}
     if not isinstance(test_data, list):
         raise Exception(
-            'Incorrectly formatted input file (must have a top level sequence)'
-        )
+            'Incorrectly formatted input file (must have a top level sequence)')
     for entry in test_data:
         if not isinstance(entry, dict):
-            raise Exception('Incorrectly formatted test entry (must be a mapping)')
+            raise Exception(
+                'Incorrectly formatted test entry (must be a mapping)')
         if 'expected' not in entry or not entry['expected']:
             raise Exception('Each test entry must defined an expected file')
         if 'command' not in entry:
@@ -53,10 +52,11 @@ def get_tests_from_file(input_filename):
             raise Exception('Each test entry must specify a name')
         if not re.match(r'^\w+$', entry['name']):
             raise Exception(
-                'Illegal test name %s - use numbers, letters, and underscores'
-                % entry['name'])
+                'Illegal test name %s - use numbers, letters, and underscores' %
+                entry['name'])
         if entry['name'] in tests:
-            raise Exception('Duplicate test name %s not allowed' % entry['name'])
+            raise Exception('Duplicate test name %s not allowed' %
+                            entry['name'])
 
         tests[entry['name']] = {
             'command': entry['command'],
@@ -107,11 +107,10 @@ def run():
                         lines_output = output_file.readlines()
                     with open(expected, 'r') as expected_file:
                         lines_expected = expected_file.readlines()
-                    for line in difflib.unified_diff(
-                            lines_expected,
-                            lines_output,
-                            fromfile=expected,
-                            tofile=output_filename):
+                    for line in difflib.unified_diff(lines_expected,
+                                                     lines_output,
+                                                     fromfile=expected,
+                                                     tofile=output_filename):
                         print(line, end='')
             else:
                 print('FAILURE. Missing expected file %s' % expected)
@@ -123,7 +122,8 @@ def run():
         print()
 
     if diff_failed or missing:
-        print('FAILURE (%d of %d tests)' %(len(diff_failed)+len(missing), len(tests)))
+        print('FAILURE (%d of %d tests)' %
+              (len(diff_failed) + len(missing), len(tests)))
         if missing:
             print('To generate missing expected files from current output')
             print('  ', 'python', sys.argv[0], args.input_filename, '--update',
