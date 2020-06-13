@@ -14,6 +14,8 @@ import difflib
 import yaml
 
 
+FAILURE_STRING= '\033[41;37mFAILURE\033[0m'
+
 class Test:
     """ A P.O.D. class to hold data for a test """
 
@@ -88,7 +90,7 @@ def _execute(args, test, diff_failed, missing):
             if not success:
                 diff_failed.append(test.name)
         else:
-            _print_info('FAILURE. Expected file %s missing' % test.expected)
+            _print_info('%s Expected file %s missing' % (FAILURE_STRING, test.expected))
             missing.append(test.name)
     print()
 
@@ -167,8 +169,8 @@ def _report(args, active_tests, tests, diff_failed, missing):
     if args.exclude_group:
         group_info += '(excluding group %s)' % args.exclude_group
     if diff_failed or missing:
-        _print_info('FAILURE %s (%d of %d total tests)' %
-              (group_info, len(diff_failed) + len(missing), len(tests)))
+        _print_info('%s %s (%d of %d total tests)' %
+              (FAILURE_STRING, group_info, len(diff_failed) + len(missing), len(tests)))
         if missing:
             _print_info('To generate missing expected files from current output')
             print('  ', sys.argv[0], args.input_filename, '-t', ','.join(missing),
@@ -193,7 +195,7 @@ def _verify(output_filename, expected):
         lines_output = output_file.readlines()
     with open(expected, 'r') as expected_file:
         lines_expected = expected_file.readlines()
-    _print_info('FAILURE. Output differs from expected:')
+    _print_info('%s. Output differs from expected:' % FAILURE_STRING)
     for line in difflib.unified_diff(lines_expected,
                                      lines_output,
                                      fromfile=expected,
