@@ -167,11 +167,11 @@ def _report(args, active_tests, tests, diff_failed, missing):
               (group_info, len(diff_failed) + len(missing), len(tests)))
         if missing:
             print('To generate missing expected files from current output')
-            print('  ', 'python', sys.argv[0], args.input_filename, '--update',
+            print(sys.argv[0], args.input_filename, '--update',
                   '-t', ','.join(missing))
         if diff_failed:
             print('To re-run with only failed tests')
-            print('  ', 'python', sys.argv[0], args.input_filename, '-t',
+            print(sys.argv[0], args.input_filename, '-t',
                   ','.join(diff_failed))
         exit_code = 1
     else:
