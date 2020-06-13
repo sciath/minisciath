@@ -71,7 +71,7 @@ def _get_arguments():
 
 
 def _execute(args, test, diff_failed, missing):
-    print('Running', test.name)
+    _print_info('Running', test.name)
     print('  ', test.command)
 
     output_filename = test.expected if args.update else test.name + '.output'
@@ -81,14 +81,14 @@ def _execute(args, test, diff_failed, missing):
                         stderr=subprocess.STDOUT)
 
     if args.update:
-        print('Expected output updated.')
+        _print_info('Expected output updated.')
     else:
         if os.path.isfile(test.expected):
             success = _verify(output_filename, test.expected)
             if not success:
                 diff_failed.append(test.name)
         else:
-            print('FAILURE. Expected file %s missing' % test.expected)
+            _print_info('FAILURE. Expected file %s missing' % test.expected)
             missing.append(test.name)
     print()
 
@@ -156,6 +156,10 @@ def _get_tests_from_file(args):
     return tests, active_tests
 
 
+def _print_info(*args, **kwargs):
+    print('\033[45m[MiniSciATH]\033[0m', *args, **kwargs)
+
+
 def _report(args, active_tests, tests, diff_failed, missing):
     group_info = ''
     if args.only_group:
@@ -163,19 +167,19 @@ def _report(args, active_tests, tests, diff_failed, missing):
     if args.exclude_group:
         group_info += '(excluding group %s)' % args.exclude_group
     if diff_failed or missing:
-        print('FAILURE %s (%d of %d total tests)' %
+        _print_info('FAILURE %s (%d of %d total tests)' %
               (group_info, len(diff_failed) + len(missing), len(tests)))
         if missing:
-            print('To generate missing expected files from current output')
-            print(sys.argv[0], args.input_filename, '-t', ','.join(missing),
+            _print_info('To generate missing expected files from current output')
+            print('  ', sys.argv[0], args.input_filename, '-t', ','.join(missing),
                   '--update')
         if diff_failed:
-            print('To re-run with only failed tests')
-            print(sys.argv[0], args.input_filename, '-t', ','.join(diff_failed))
+            _print_info('To re-run with only failed tests')
+            print('  ', sys.argv[0], args.input_filename, '-t', ','.join(diff_failed))
         exit_code = 1
     else:
         if not args.update:
-            print('SUCCESS %s (%d of %d total tests)' %
+            _print_info('SUCCESS %s (%d of %d total tests)' %
                   (group_info, len(active_tests), len(tests)))
         exit_code = 0
     return exit_code
@@ -183,18 +187,18 @@ def _report(args, active_tests, tests, diff_failed, missing):
 
 def _verify(output_filename, expected):
     if filecmp.cmp(output_filename, expected):
-        print('Success.')
+        _print_info('Success.')
         return True
     with open(output_filename, 'r') as output_file:
         lines_output = output_file.readlines()
     with open(expected, 'r') as expected_file:
         lines_expected = expected_file.readlines()
+    _print_info('FAILURE. Output differs from expected:')
     for line in difflib.unified_diff(lines_expected,
                                      lines_output,
                                      fromfile=expected,
                                      tofile=output_filename):
         print(line, end='')
-    print('FAILURE. Output differs from expected:')
     return False
 
 
