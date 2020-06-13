@@ -157,7 +157,7 @@ def _get_tests_from_file(args):
 
 
 def _print_info(*args, **kwargs):
-    print('\033[45m[MiniSciATH]\033[0m', *args, **kwargs)
+    print('\033[104;37m[MiniSciATH]\033[0m', *args, **kwargs)
 
 
 def _report(args, active_tests, tests, diff_failed, missing):
