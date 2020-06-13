@@ -50,6 +50,7 @@ def run():
                 if not success:
                     diff_failed.append(test.name)
             else:
+                print('FAILURE. Expected file %s missing' % test.expected)
                 missing.append(test.name)
         print()
 
