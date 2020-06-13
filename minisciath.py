@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ MiniSciATH, a minimal testing system """
 from __future__ import print_function
 
@@ -13,7 +14,7 @@ import difflib
 import yaml
 
 
-class Test(object):
+class Test:
     """ A P.O.D. class to hold data for a test """
 
     def __init__(self, name, command, expected, group=None):
@@ -25,7 +26,6 @@ class Test(object):
 
 def run():
     """ The main function for MiniSciATH """
-
     args = _get_arguments()
 
     tests, active_tests = _get_tests_from_file(args)
@@ -33,43 +33,15 @@ def run():
     diff_failed = []
     missing = []
     for test in active_tests:
-        print('Running', test.name)
-        print('  ', test.command)
+        _execute(args=args, test=test, diff_failed=diff_failed, missing=missing)
 
-        output_filename = test.expected if args.update else test.name + '.output'
-        with open(output_filename, 'w') as output_file:
-            subprocess.call(shlex.split(test.command),
-                            stdout=output_file,
-                            stderr=subprocess.STDOUT)
+    exit_code = _report(args=args,
+                        active_tests=active_tests,
+                        tests=tests,
+                        diff_failed=diff_failed,
+                        missing=missing)
 
-        if args.update:
-            print('Expected output updated.')
-        else:
-            if os.path.isfile(test.expected):
-                success = _verify(output_filename, test.expected)
-                if not success:
-                    diff_failed.append(test.name)
-            else:
-                print('FAILURE. Expected file %s missing' % test.expected)
-                missing.append(test.name)
-        print()
-
-    if diff_failed or missing:
-        print('FAILURE (%d of %d tests)' %
-              (len(diff_failed) + len(missing), len(tests)))
-        if missing:
-            print('To generate missing expected files from current output')
-            print('  ', 'python', sys.argv[0], args.input_filename, '--update',
-                  '-t', ','.join(missing))
-        if diff_failed:
-            print('To re-run with only failed tests')
-            print('  ', 'python', sys.argv[0], args.input_filename, '-t',
-                  ','.join(diff_failed))
-        sys.exit(1)
-    else:
-        if not args.update:
-            print('SUCCESS (%d of %d tests)' % (len(active_tests), len(tests)))
-        sys.exit(0)
+    sys.exit(exit_code)
 
 
 def _get_arguments():
@@ -98,8 +70,30 @@ def _get_arguments():
     return parser.parse_args()
 
 
-def _get_tests_from_file(args):
+def _execute(args, test, diff_failed, missing):
+    print('Running', test.name)
+    print('  ', test.command)
 
+    output_filename = test.expected if args.update else test.name + '.output'
+    with open(output_filename, 'w') as output_file:
+        subprocess.call(shlex.split(test.command),
+                        stdout=output_file,
+                        stderr=subprocess.STDOUT)
+
+    if args.update:
+        print('Expected output updated.')
+    else:
+        if os.path.isfile(test.expected):
+            success = _verify(output_filename, test.expected)
+            if not success:
+                diff_failed.append(test.name)
+        else:
+            print('FAILURE. Expected file %s missing' % test.expected)
+            missing.append(test.name)
+    print()
+
+
+def _get_tests_from_file(args):
     with open(args.input_filename, 'r') as input_file:
         test_data = yaml.safe_load(input_file)
 
@@ -160,6 +154,32 @@ def _get_tests_from_file(args):
         active_tests = [test for test in active_tests if test.group == group]
 
     return tests, active_tests
+
+
+def _report(args, active_tests, tests, diff_failed, missing):
+    group_info = ''
+    if args.only_group:
+        group_info += '(only group %s)' % args.only_group
+    if args.exclude_group:
+        group_info += '(excluding group %s)' % args.exclude_group
+    if diff_failed or missing:
+        print('FAILURE %s (%d of %d total tests)' %
+              (group_info, len(diff_failed) + len(missing), len(tests)))
+        if missing:
+            print('To generate missing expected files from current output')
+            print('  ', 'python', sys.argv[0], args.input_filename, '--update',
+                  '-t', ','.join(missing))
+        if diff_failed:
+            print('To re-run with only failed tests')
+            print('  ', 'python', sys.argv[0], args.input_filename, '-t',
+                  ','.join(diff_failed))
+        exit_code = 1
+    else:
+        if not args.update:
+            print('SUCCESS %s (%d of %d total tests)' %
+                  (group_info, len(active_tests), len(tests)))
+        exit_code = 0
+    return exit_code
 
 
 def _verify(output_filename, expected):
