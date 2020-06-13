@@ -140,7 +140,7 @@ def _get_tests_from_file(args):
         active_test_names = args.test_subset.split(',')
         active_tests = []
         for test_name in active_test_names:
-            if test_name not in tests:
+            if name_to_test[test.name] not in tests:
                 raise Exception("Unrecognized test %s selected" % test_name)
             active_tests.append(name_to_test[test_name])
     else:
