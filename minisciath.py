@@ -11,9 +11,8 @@ import re
 import filecmp
 import difflib
 
-import yaml
-
 FAILURE_STRING = '\033[41;37mFAILURE\033[0m'
+INFO_STRING = '\033[104;37m[MiniSciATH]\033[0m'
 
 
 class Test:
@@ -97,8 +96,7 @@ def _execute(args, test, diff_failed, missing):
 
 
 def _get_tests_from_file(args):
-    with open(args.input_filename, 'r') as input_file:
-        test_data = yaml.safe_load(input_file)
+    test_data = _parse_yaml_subset_from_file(args.input_filename)
 
     tests = []
     if not isinstance(test_data, list):
@@ -160,7 +158,7 @@ def _get_tests_from_file(args):
 
 
 def _print_info(*args, **kwargs):
-    print('\033[104;37m[MiniSciATH]\033[0m', *args, **kwargs)
+    print(INFO_STRING, *args, **kwargs)
 
 
 def _report(args, active_tests, tests, diff_failed, missing):
@@ -206,6 +204,128 @@ def _verify(output_filename, expected):
                                      tofile=output_filename):
         print(line, end='')
     return False
+
+
+def _parse_line(line, filename, line_number):
+
+    # Determine indentation level
+    line_without_newline = line.rstrip('\n')
+    content = line_without_newline.lstrip()
+    indent = len(line_without_newline) - len(content)
+    if line_without_newline[:indent] != ' ' * indent:
+        _parse_error(filename, line_number, "Indent with spaces only")
+
+    # Remove comments from content
+    content = content.split('#')[0].rstrip()
+
+    return indent, content
+
+
+def _parse_error(filename, line_number, message):
+    raise Exception(
+        "%s %s %s:%d  File parse error: %s" %
+        (INFO_STRING, FAILURE_STRING, filename, line_number, message))
+
+
+def _parse_yaml_subset_from_file(filename):
+    """ Parse a subset of YAML files into a nested structure of list and dict objects
+
+        Flow style is not supported, only block collections.
+
+        Here, we prioritize having a contained and independent script,
+        but in general one should use a module like strictyaml or PyYAML.
+    """
+
+    class _StackFrame():
+
+        def __init__(self, entry_type, indent, data):
+            self.entry_type = entry_type
+            self.indent = indent
+            self.data = data
+
+    with open(filename, 'r') as input_file:
+        lines = input_file.readlines()
+
+    stack = []
+
+    line_number = 0
+    for line_number, line in enumerate(lines, start=1):
+
+        indent, content = _parse_line(line, filename, line_number)
+        if not content:
+            continue
+
+        # Parse content
+        if content.startswith('-'):
+            entry_type = 's'
+            value = content[1:].strip()
+        else:
+            entry_type = 'm'
+            key, value = content.split(':')
+            key = key.strip()
+            value = value.strip()
+
+        # Add content to nested structure
+        if not stack:
+            # The first entry
+            if entry_type == 's':
+                data = [value]
+                prev_key = None
+            elif entry_type == 'm':
+                data = {key: value}
+                prev_key = key
+            stack = [_StackFrame(entry_type, indent, data)]
+        else:
+            curr = stack[-1]
+            if indent != curr.indent:
+                if indent > curr.indent:
+                    prev = curr
+
+                    # Create a new stack frame with an empty list or dict
+                    new_data = {} if entry_type == 'm' else []
+                    stack.append(_StackFrame(entry_type, indent, new_data))
+                    curr = stack[-1]
+
+                    # Insert new data as value in preceding item
+                    if prev.entry_type == 's':
+                        if prev.data[-1]:
+                            _parse_error(
+                                filename, line_number,
+                                "Data not allowed on previous sequence line, when nesting"
+                            )
+                        prev.data[-1] = new_data
+                    else:
+                        if prev.data[prev_key]:
+                            _parse_error(
+                                filename, line_number,
+                                "Data not allowed on previous mapping line, when nesting"
+                            )
+                        prev.data[prev_key] = new_data
+                else:
+                    # Unwind the stack
+                    while True:
+                        stack.pop()
+                        if not stack:
+                            _parse_error(filename, line_number,
+                                         "Invalid indentation")
+                        curr = stack[-1]
+                        if indent == curr.indent:
+                            break
+
+            # Add new entry to current list or dict
+            if entry_type != curr.entry_type:
+                _parse_error(filename, line_number, "Invalid entry type")
+            if entry_type == 's':
+                curr.data.append(value)
+                prev_key = None
+            else:
+                if key in curr.data:
+                    _parse_error(filename, line_number,
+                                 "Duplicate key: %s" % key)
+                curr.data[key] = value
+                prev_key = key
+
+    return stack[0].data
 
 
 if __name__ == '__main__':
