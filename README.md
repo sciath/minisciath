@@ -1,6 +1,6 @@
 # MiniSciATH
 
-[![Build Status](https://travis-ci.com/sciath/minisciath.svg?branch=master)](https://travis-ci.com/sciath/minisciath)
+[![CI](https://github.com/sciath/minisciath/actions/workflows/ci.yml/badge.svg)](https://github.com/sciath/minisciath/actions)
 
     cd example
     ../minisciath.py example.yml                    # run all
