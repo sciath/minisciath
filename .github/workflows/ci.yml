@@ -1,0 +1,42 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  style:
+    runs-on: ubuntu-latest
+    name: Python 3.x Style Checks
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+          architecture: x64
+      - name: Style
+        run: |
+          python -m pip install --upgrade pip
+          pip install yapf
+          yapf --style=google -d -r .
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '2.7.x', '3.5', '3.x' ]
+    name: Python ${{ matrix.python-version }} Checks
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+      - name: Static analysis
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+          sh -c "pylint --errors-only *.py"
